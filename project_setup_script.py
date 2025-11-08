@@ -50,10 +50,10 @@ def install_requirements(os_type):
         print(f"{YELLOW}Installing cookiecutter via pipx...{RESET}")
         # Ensure pipx is installed
         if not shutil.which("pipx"):
-            print(f"{YELLOW}Installing pipx...{RESET}")
-            run(f"{sys.executable} -m pip install --user pipx")
-            run(f"{sys.executable} -m pipx ensurepath")
-        run("pipx install cookiecutter")
+            print(f"{YELLOW}Installing pipx...{RESET}") 
+            run(f"{sys.executable} -m pip install --user pipx") 
+            run(f"{sys.executable} -m pipx ensurepath") 
+        run(f"{sys.executable} -m pipx install cookiecutter")
     else:
         print(f"{GREEN}cookiecutter is already installed.{RESET}")
 
@@ -67,7 +67,9 @@ def generate_project(template_repo, target_path):
         sys.exit(1)
 
     print("\nCreating project with Cookiecutter...\n")
-    run(f"cookiecutter {template_repo} --no-input project_name='{project_name}'")
+    # Run Cookiecutter via pipx to ensure cross-platform compatibility
+    run(f"{sys.executable} -m pipx run cookiecutter {template_repo} --no-input project_name='{project_name}'")
+
 
     # Find generated folder
     dirs = [d for d in os.listdir('.') if os.path.isdir(d) and d.startswith(project_name)]
