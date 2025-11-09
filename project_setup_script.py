@@ -3,6 +3,7 @@ import platform
 import subprocess
 import sys
 import shutil
+from cookiecutter.main import cookiecutter
 
 # ANSI color codes
 RED = "\033[91m"
@@ -59,6 +60,7 @@ def install_requirements(os_type):
 
 def generate_project(template_repo, target_path):
     """Create a new project from the Cookiecutter template."""
+
     project_name = input("Project name: ").strip()
     target_dir = os.path.join(os.path.abspath(target_path), project_name)
 
@@ -66,23 +68,31 @@ def generate_project(template_repo, target_path):
         print(f"{RED}Error: The folder '{target_dir}' already exists. Aborting.{RESET}")
         sys.exit(1)
 
-    print("\nCreating project with Cookiecutter...\n")
-    # Run Cookiecutter via pipx to ensure cross-platform compatibility
-    run(f"{sys.executable} -m pipx run cookiecutter {template_repo} --no-input project_name='{project_name}'")
+    print(f"{YELLOW} + '\nCreating project with Cookiecutter...' + {RESET}")
 
+    # --------------------------------------------------------------------------------
+    # NEW: Use Cookiecutter's Python API instead of subprocess to ensure compatibility
+    # --------------------------------------------------------------------------------
+    try:
+        project_dir = cookiecutter(
+            template_repo,
+            no_input=False,  # Allow interactive prompts since template has multiple variables
+            extra_context={"project_name": project_name},  # Pre-fill project_name
+            output_dir=target_path  # Ensure it generates inside the chosen path
+        )
+    except Exception as e:
+        print(f"{RED}Error while running Cookiecutter: {e}{RESET}")
+        sys.exit(1)
 
-    # Find generated folder
-    dirs = [d for d in os.listdir('.') if os.path.isdir(d) and d.startswith(project_name)]
-    if not dirs:
+    # NEW: Validate that Cookiecutter generated a project
+    if not project_dir or not os.path.exists(project_dir):
         print(f"{RED}No project folder found. Cookiecutter may not have generated anything.{RESET}")
         sys.exit(1)
 
-    # Move the project to the target path
-    generated_dir = dirs[0]
-    final_path = os.path.join(target_path, generated_dir)
-    shutil.move(generated_dir, final_path)
-    print(f"{GREEN}Project successfully created at: {final_path}{RESET}")
-    return final_path
+    # NEW: Print confirmation
+    print(f"{GREEN}Project successfully created at: {project_dir}{RESET}")
+    return project_dir
+
 
 def init_and_push_to_github(project_dir):
     """Initialize Git and push the project to GitHub."""
@@ -97,10 +107,22 @@ def init_and_push_to_github(project_dir):
     create_choice = input("Do you want to create a GitHub repository? [y/n]: ").strip().lower()
     if create_choice != "y":
         print(f"{YELLOW}No remote repository will be created.{RESET}")
+        print(f"{YELLOW}Warning: cd <your_project_folder>{RESET}")
+        print(f"{YELLOW}Warning: git init{RESET}")
+        print(f"{YELLOW}Warning: git add .{RESET}")
+        print(f'{YELLOW}Warning: git commit -m "Initial commit"{RESET}')
+        print(f"{YELLOW}Warning: git remote add origin https://github.com/<your-username>/<repo-name>.git{RESET}")
+        print(f"{YELLOW}Warning: git push -u origin main{RESET}")
         return
 
     if not shutil.which("gh"):
         print(f"{YELLOW}Warning: GitHub CLI (gh) not found. Please create a repository manually or use a PAT.{RESET}")
+        print(f"{YELLOW}Warning: cd <your_project_folder>{RESET}")
+        print(f"{YELLOW}Warning: git init{RESET}")
+        print(f"{YELLOW}Warning: git add .{RESET}")
+        print(f'{YELLOW}Warning: git commit -m "Initial commit"{RESET}')
+        print(f"{YELLOW}Warning: git remote add origin https://github.com/<your-username>/<repo-name>.git{RESET}")
+        print(f"{YELLOW}Warning: git push -u origin main{RESET}")
         return
 
     print("\nCreating GitHub repository ...")
@@ -120,14 +142,14 @@ def main():
     install_requirements(os_type)
 
     # Ask for target path
-    target_path = input("\nEnter the path where the project should be created: ").strip()
+    target_path = input("\nEnter the complete path (~/../path/project or C:\path\project) where the project should be created: ").strip()
     if not os.path.isdir(target_path):
         print(f"{YELLOW}Path does not exist. Creating directory...{RESET}")
         os.makedirs(target_path, exist_ok=True)
         print(f"{GREEN}Directory created: {target_path}{RESET}")
 
     template_repo = input(
-        "\nEnter the URL of your Cookiecutter template (e.g., https://github.com/ASJKM/project_setup_script.git ):\n> "
+        "\nEnter the URL of your Cookiecutter template (e.g., https://github.com/ASJKM/project_setup.git ):\n> "
     ).strip()
 
     project_dir = generate_project(template_repo, target_path)
