@@ -93,6 +93,105 @@ def generate_project(template_repo, target_path):
     print(f"{GREEN}Project successfully created at: {project_dir}{RESET}")
     return project_dir
 
+def handle_skip_license(project_dir):
+    """Remove LICENSE file and license references if user selected 'Skip'."""
+    import json
+    import re
+
+    context_file = os.path.join(project_dir, ".cookiecutter.json")
+
+    if not os.path.exists(context_file):
+        print(f"{YELLOW}Warning: No .cookiecutter.json found. Skipping license cleanup.{RESET}")
+        return
+
+    try:
+        with open(context_file, "r", encoding="utf-8") as f:
+            context = json.load(f)
+
+        if context.get("license") != "Skip":
+            return  # ✅ Nothing to clean
+
+        print(f"{YELLOW}License skipped. Cleaning all license references...{RESET}")
+
+        # -------------------------------------------------------
+        # ✅ 1. DELETE LICENSE FILE
+        # -------------------------------------------------------
+        license_path = os.path.join(project_dir, "LICENSE")
+        if os.path.exists(license_path):
+            os.remove(license_path)
+            print(f"{GREEN}Removed LICENSE file.{RESET}")
+
+        # -------------------------------------------------------
+        # ✅ 2. CLEAN pyproject.toml
+        # -------------------------------------------------------
+        pyproject_path = os.path.join(project_dir, "pyproject.toml")
+        if os.path.exists(pyproject_path):
+            with open(pyproject_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Remove license field safely
+            content = re.sub(r'license\s*=\s*".*?"\n', '', content)
+
+            # Remove classifiers that reference licenses
+            content = re.sub(
+                r'classifiers\s*=\s*\[(?:.|\n)*?\]',
+                lambda m: '\n'.join(
+                    [line for line in m.group(0).splitlines() if "License ::" not in line]
+                ),
+                content
+            )
+
+            with open(pyproject_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            print(f"{GREEN}Cleaned license from pyproject.toml.{RESET}")
+
+        # -------------------------------------------------------
+        # ✅ 3. CLEAN setup.cfg
+        # -------------------------------------------------------
+        setup_cfg_path = os.path.join(project_dir, "setup.cfg")
+        if os.path.exists(setup_cfg_path):
+            with open(setup_cfg_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Remove license field
+            content = re.sub(r'^license\s*=.*\n', '', content, flags=re.MULTILINE)
+
+            # Remove license classifiers
+            content = re.sub(r'.*License ::.*\n', '', content)
+
+            with open(setup_cfg_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            print(f"{GREEN}Cleaned license from setup.cfg.{RESET}")
+
+        # -------------------------------------------------------
+        # ✅ 4. CLEAN README.md
+        # -------------------------------------------------------
+        readme_path = os.path.join(project_dir, "README.md")
+        if os.path.exists(readme_path):
+            with open(readme_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Remove common license sections
+            content = re.sub(
+                r'## License(?:.|\n)*?$',
+                '',
+                content,
+                flags=re.IGNORECASE
+            )
+
+            # Remove badge-style license lines
+            content = re.sub(r'.*license.*badge.*\n', '', content, flags=re.IGNORECASE)
+            content = re.sub(r'.*license.*\n', '', content, flags=re.IGNORECASE)
+
+            with open(readme_path, "w", encoding="utf-8") as f:
+                f.write(content.strip() + "\n")
+
+            print(f"{GREEN}Cleaned license from README.md.{RESET}")
+
+    except Exception as e:
+        print(f"{RED}Failed to fully process license cleanup: {e}{RESET}")
 
 def init_and_push_to_github(project_dir):
     """Initialize Git and push the project to GitHub."""
@@ -153,6 +252,7 @@ def main():
     ).strip()
 
     project_dir = generate_project(template_repo, target_path)
+    handle_skip_license(project_dir)
     init_and_push_to_github(project_dir)
 
     print(f"\n{GREEN}Done! Your project has been successfully set up.{RESET}")
