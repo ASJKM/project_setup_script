@@ -108,10 +108,10 @@ def handle_skip_license(project_dir):
         with open(context_file, "r", encoding="utf-8") as f:
             context = json.load(f)
 
-        if context.get("license") != "Skip":
+        if context.get("license") not in ["Skip", "None"]:
             return  # ✅ Nothing to clean
 
-        print(f"{YELLOW}License skipped. Cleaning all license references...{RESET}")
+        print(f"{YELLOW}License skipped/none. Cleaning all license references...{RESET}")
 
         # -------------------------------------------------------
         # ✅ 1. DELETE LICENSE FILE
@@ -193,44 +193,8 @@ def handle_skip_license(project_dir):
     except Exception as e:
         print(f"{RED}Failed to fully process license cleanup: {e}{RESET}")
 
-def init_and_push_to_github(project_dir):
-    """Initialize Git and push the project to GitHub."""
-    os.chdir(project_dir)
-
-    print("\nInitializing local Git repository ...")
-    run("git init")
-    run("git add .")
-    run('git commit -m "Initial commit from setup script"')
-
-    repo_name = os.path.basename(os.getcwd())
-    create_choice = input("Do you want to create a GitHub repository? [y/n]: ").strip().lower()
-    if create_choice != "y":
-        print(f"{YELLOW}No remote repository will be created.{RESET}")
-        print(f"{YELLOW}Warning: cd <your_project_folder>{RESET}")
-        print(f"{YELLOW}Warning: git init{RESET}")
-        print(f"{YELLOW}Warning: git add .{RESET}")
-        print(f'{YELLOW}Warning: git commit -m "Initial commit"{RESET}')
-        print(f"{YELLOW}Warning: git remote add origin https://github.com/<your-username>/<repo-name>.git{RESET}")
-        print(f"{YELLOW}Warning: git push -u origin main{RESET}")
-        return
-
-    if not shutil.which("gh"):
-        print(f"{YELLOW}Warning: GitHub CLI (gh) not found. Please create a repository manually or use a PAT.{RESET}")
-        print(f"{YELLOW}Warning: cd <your_project_folder>{RESET}")
-        print(f"{YELLOW}Warning: git init{RESET}")
-        print(f"{YELLOW}Warning: git add .{RESET}")
-        print(f'{YELLOW}Warning: git commit -m "Initial commit"{RESET}')
-        print(f"{YELLOW}Warning: git remote add origin https://github.com/<your-username>/<repo-name>.git{RESET}")
-        print(f"{YELLOW}Warning: git push -u origin main{RESET}")
-        return
-
-    print("\nCreating GitHub repository ...")
-    run(f"gh repo create {repo_name} --public --source=. --remote=origin --push")
-
-    print(f"{GREEN}Project successfully created and pushed to GitHub.{RESET}")
-
 def main():
-    print("=== Automatic GitHub Project Setup with Cookiecutter ===\n")
+    print("=== Automatic Project Setup with Cookiecutter ===\n")
 
     os_type = detect_os()
     confirm = input(f"Proceed with setup on {os_type}? [y/n]: ").strip().lower()
@@ -241,7 +205,7 @@ def main():
     install_requirements(os_type)
 
     # Ask for target path
-    target_path = input("\nEnter the complete path (~/../path/project or C:\path\project) where the project should be created: ").strip()
+    target_path = input("\nEnter the complete path (~/../path/project or C:\\path\\project) where the project should be created: ").strip()
     if not os.path.isdir(target_path):
         print(f"{YELLOW}Path does not exist. Creating directory...{RESET}")
         os.makedirs(target_path, exist_ok=True)
@@ -253,7 +217,6 @@ def main():
 
     project_dir = generate_project(template_repo, target_path)
     handle_skip_license(project_dir)
-    init_and_push_to_github(project_dir)
 
     print(f"\n{GREEN}Done! Your project has been successfully set up.{RESET}")
 

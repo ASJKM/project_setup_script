@@ -15,7 +15,9 @@ It automatically detects your operating system, installs required tools, generat
   - The **target directory** where the project should be created  
   - The **Cookiecutter template repository URL**  
   - The **project name**
+  - The **license type** (MIT, Apache-2.0, GPL-3.0, or None)
 - Automatically generates a new project from the provided template
+- Automatically removes license files and references when "None" is selected
 - Initializes a **Git repository**, commits the initial files
 - Optionally creates and pushes to a **GitHub repository** using the `gh` CLI
 - Uses **colored console output** for better readability  
@@ -73,9 +75,14 @@ You’ll be guided through several interactive steps:
 1. Confirm the detected operating system.
 2. Verify and install dependencies (Git and Cookiecutter).
 3. Enter the target path where the project should be created.
-4. Provide the Cookiecutter template repository URL (e.g. https://github.com/ASJKM/project_setup_script.git )
+4. Provide the Cookiecutter template repository URL (e.g. https://github.com/ASJKM/project_setup.git)
 5. Specify the project name.
-6. Optionally push the generated project to GitHub.
+6. Select a license type:
+   - **MIT** - Permissive open-source license
+   - **Apache-2.0** - Permissive license with patent protection
+   - **GPL-3.0** - Copyleft open-source license
+   - **None** - No license (all license files and references will be removed)
+7. Optionally push the generated project to GitHub.
 
 ## Example Worlflow
 
@@ -105,15 +112,36 @@ You’ll be guided through several interactive steps:
 ## Example Project Structure
 
     /home/user/projects/demo_app/
-    ├── development/
+    ├── apps/
+    │   ├── README.md
+    │   ├── desktop/
+    │   ├── mobile/
+    │   └── webui/
+    ├── backend/
+    │   ├── README.md
+    │   ├── ai/
+    │   ├── api/
+    │   └── shared/
     ├── deployment/
-    ├── tests/
-    │   ├── unit/
-    │   ├── system/
-    │   └── static_analysis/
+    │   └── README.md
+    ├── dev/
+    │   ├── README.md
+    │   └── scripts/
     ├── docs/
-    │   ├── source/
-    │   └── build/
+    │   ├── Makefile
+    │   ├── README.md
+    │   └── source/
+    ├── tests/
+    │   ├── README.md
+    │   ├── backend/
+    │   ├── integration/
+    │   ├── mobile/
+    │   └── webui/
+    ├── .pre-commit-config.yaml
+    ├── check_setup.py
+    ├── pyproject.toml
+    ├── requirements.txt
+    ├── setup.cfg
     └── README.md
 
 ## Contributing
